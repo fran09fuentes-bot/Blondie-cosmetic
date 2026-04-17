@@ -1,1 +1,38 @@
+:root {
+  font-family: Inter, system-ui, Arial, sans-serif;
+  background: #0f172a;
+  color: #f1f5f9;
+}
 
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 28px;
+  color: #22c55e;
+}
+
+button {
+  background: #22c55e;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: black;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #16a34a;
+}
+
+.container {
+  padding: 20px;
+}
