@@ -1,305 +1,337 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import './styles.css'
 
-const STORAGE_KEY = 'blondie_cosmetic_data_v1'
-
-const seedProducts = [
-  { id: 1, name: 'Shampoo', category: 'Cabello', price: 5, cost: 3, stock: 20, sku: 'BLD-001' },
-  { id: 2, name: 'Perfume', category: 'Fragancias', price: 12, cost: 7, stock: 10, sku: 'BLD-002' },
-  { id: 3, name: 'Crema Facial', category: 'Skin Care', price: 9, cost: 5, stock: 15, sku: 'BLD-003' },
-  { id: 4, name: 'Labial Mate', category: 'Maquillaje', price: 6, cost: 3.5, stock: 18, sku: 'BLD-004' },
+const initialProducts = [
+  { id: 1, name: 'Shampoo', category: 'Cabello', sku: 'BLD-001', price: 5, stock: 20 },
+  { id: 2, name: 'Perfume', category: 'Fragancias', sku: 'BLD-002', price: 12, stock: 10 },
+  { id: 3, name: 'Crema Facial', category: 'Skin Care', sku: 'BLD-003', price: 9, stock: 15 },
+  { id: 4, name: 'Labial Mate', category: 'Maquillaje', sku: 'BLD-004', price: 6, stock: 18 },
 ]
 
-const seedSales = []
-
 function money(value) {
-  return new Intl.NumberFormat('es-SV', { style: 'currency', currency: 'USD' }).format(Number(value || 0))
-}
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch {
-    return null
-  }
-}
-
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-}
-
-function StatCard({ title, value, subtext }) {
-  return (
-    <div className="card stat-card">
-      <div className="stat-title">{title}</div>
-      <div className="stat-value">{value}</div>
-      <div className="stat-subtext">{subtext}</div>
-    </div>
-  )
-}
-
-function TabButton({ active, children, onClick }) {
-  return (
-    <button className={`tab-button ${active ? 'active' : ''}`} onClick={onClick}>
-      {children}
-    </button>
-  )
+  return new Intl.NumberFormat('es-SV', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(value)
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard')
-  const [products, setProducts] = useState(seedProducts)
-  const [sales, setSales] = useState(seedSales)
+  const [tab, setTab] = useState('ventas')
+  const [search, setSearch] = useState('')
   const [cart, setCart] = useState([])
-  const [query, setQuery] = useState('')
-  const [newProduct, setNewProduct] = useState({ name: '', category: '', price: '', cost: '', stock: '', sku: '' })
 
-  useEffect(() => {
-    const saved = loadData()
-    if (saved) {
-      setProducts(saved.products || seedProducts)
-      setSales(saved.sales || seedSales)
-    }
-  }, [])
-
-  useEffect(() => {
-    saveData({ products, sales })
-  }, [products, sales])
+  const products = initialProducts
 
   const filteredProducts = useMemo(() => {
-    const q = query.toLowerCase()
+    const q = search.toLowerCase().trim()
+    if (!q) return products
     return products.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.category.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q),
+        p.sku.toLowerCase().includes(q)
     )
-  }, [products, query])
-
-  const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0)
-  const totalCost = sales.reduce((sum, sale) => sum + sale.cost, 0)
-  const totalProfit = totalSales - totalCost
-  const avgTicket = sales.length ? totalSales / sales.length : 0
-  const lowStock = products.filter((p) => p.stock <= 5).length
+  }, [search, products])
 
   const addToCart = (product) => {
-    if (product.stock <= 0) return
-
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id)
+
       if (existing) {
         if (existing.qty >= product.stock) return prev
-        return prev.map((item) => (item.id === product.id ? { ...item, qty: item.qty + 1 } : item))
+        return prev.map((item) =>
+          item.id === product.id ? { ...item, qty: item.qty + 1 } : item
+        )
       }
+
       return [...prev, { ...product, qty: 1 }]
     })
   }
 
-  const updateCartQty = (id, nextQty) => {
-    const product = products.find((item) => item.id === id)
-    if (!product) return
-    if (nextQty <= 0) {
-      setCart((prev) => prev.filter((item) => item.id !== id))
-      return
-    }
-    const safeQty = Math.min(nextQty, product.stock)
-    setCart((prev) => prev.map((item) => (item.id === id ? { ...item, qty: safeQty } : item)))
+  const decreaseQty = (id) => {
+    setCart((prev) =>
+      prev
+        .map((item) =>
+          item.id === id ? { ...item, qty: item.qty - 1 } : item
+        )
+        .filter((item) => item.qty > 0)
+    )
+  }
+
+  const increaseQty = (id) => {
+    setCart((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item
+        if (item.qty >= item.stock) return item
+        return { ...item, qty: item.qty + 1 }
+      })
+    )
   }
 
   const removeFromCart = (id) => {
     setCart((prev) => prev.filter((item) => item.id !== id))
   }
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.qty * item.price, 0)
-  const cartCost = cart.reduce((sum, item) => sum + item.qty * item.cost, 0)
-  const cartProfit = cartTotal - cartCost
-
-  const completeSale = () => {
-    if (!cart.length) return
-
-    const newSale = {
-      id: Date.now(),
-      date: new Date().toLocaleString(),
-      total: cartTotal,
-      cost: cartCost,
-      items: cart.map((item) => ({ name: item.name, qty: item.qty, price: item.price })),
-    }
-
-    setSales((prev) => [newSale, ...prev])
-    setProducts((prev) =>
-      prev.map((product) => {
-        const sold = cart.find((item) => item.id === product.id)
-        return sold ? { ...product, stock: product.stock - sold.qty } : product
-      }),
-    )
+  const resetDemo = () => {
     setCart([])
-    setActiveTab('reportes')
+    setSearch('')
+    setTab('dashboard')
   }
 
-  const addProduct = () => {
-    if (!newProduct.name || !newProduct.category || !newProduct.price || !newProduct.cost || !newProduct.stock) return
+  const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0)
+  const cost = cart.reduce((acc, item) => acc + item.qty * (item.price * 0.55), 0)
+  const profit = subtotal - cost
+  const stockLow = products.filter((p) => p.stock <= 10).length
 
-    const product = {
-      id: Date.now(),
-      name: newProduct.name,
-      category: newProduct.category,
-      price: Number(newProduct.price),
-      cost: Number(newProduct.cost),
-      stock: Number(newProduct.stock),
-      sku: newProduct.sku || `BLD-${String(Date.now()).slice(-4)}`,
-    }
-
-    setProducts((prev) => [product, ...prev])
-    setNewProduct({ name: '', category: '', price: '', cost: '', stock: '', sku: '' })
-  }
-
-  const resetAll = () => {
-    setProducts(seedProducts)
-    setSales(seedSales)
-    setCart([])
-    localStorage.removeItem(STORAGE_KEY)
-  }
+  const totalProducts = products.length
+  const totalSales = 0
+  const averageTicket = 0
+  const margin = subtotal > 0 ? ((profit / subtotal) * 100).toFixed(0) : 0
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div>
-          <div className="brand">Blondie Cosmetic</div>
-          <div className="brand-subtitle">Sistema de ventas</div>
+        <div className="brand-block">
+          <h1>Blondie Cosmetic</h1>
+          <p>Sistema de ventas</p>
         </div>
 
-        <div className="nav-group">
-          <TabButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')}>
+        <nav className="sidebar-nav">
+          <button
+            className={tab === 'dashboard' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setTab('dashboard')}
+          >
             Dashboard
-          </TabButton>
-          <TabButton active={activeTab === 'ventas'} onClick={() => setActiveTab('ventas')}>
-            Ventas
-          </TabButton>
-          <TabButton active={activeTab === 'inventario'} onClick={() => setActiveTab('inventario')}>
-            Inventario
-          </TabButton>
-          <TabButton active={activeTab === 'reportes'} onClick={() => setActiveTab('reportes')}>
-            Reportes
-          </TabButton>
-        </div>
+          </button>
 
-        <button className="secondary-button" onClick={resetAll}>
+          <button
+            className={tab === 'ventas' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setTab('ventas')}
+          >
+            Ventas
+          </button>
+
+          <button
+            className={tab === 'inventario' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setTab('inventario')}
+          >
+            Inventario
+          </button>
+
+          <button
+            className={tab === 'reportes' ? 'nav-btn active' : 'nav-btn'}
+            onClick={() => setTab('reportes')}
+          >
+            Reportes
+          </button>
+        </nav>
+
+        <button className="reset-btn" onClick={resetDemo}>
           Reiniciar demo
         </button>
       </aside>
 
       <main className="main-content">
-        <header className="page-header">
-          <div>
-            <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
-            <p>Blondie Cosmetic · listo para GitHub y Vercel</p>
-          </div>
-        </header>
+        {tab === 'dashboard' && (
+          <section>
+            <div className="page-header">
+              <div>
+                <span className="eyebrow">Resumen general</span>
+                <h2>Dashboard</h2>
+                <p>Blondie Cosmetic · listo para GitHub y Vercel</p>
+              </div>
+            </div>
 
-        {activeTab === 'dashboard' && (
-          <section className="content-grid">
             <div className="stats-grid">
-              <StatCard title="Ventas totales" value={money(totalSales)} subtext="Ingresos acumulados" />
-              <StatCard title="Ganancia" value={money(totalProfit)} subtext="Ventas - costo" />
-              <StatCard title="Ticket promedio" value={money(avgTicket)} subtext="Promedio por venta" />
-              <StatCard title="Stock bajo" value={String(lowStock)} subtext="Productos por reponer" />
+              <div className="stat-card">
+                <span>Ventas totales</span>
+                <strong>{money(subtotal)}</strong>
+                <small>Ingresos acumulados</small>
+              </div>
+
+              <div className="stat-card">
+                <span>Ganancia</span>
+                <strong>{money(profit)}</strong>
+                <small>Ventas - costo</small>
+              </div>
+
+              <div className="stat-card">
+                <span>Ticket promedio</span>
+                <strong>{money(averageTicket)}</strong>
+                <small>Promedio por venta</small>
+              </div>
+
+              <div className="stat-card">
+                <span>Stock bajo</span>
+                <strong>{stockLow}</strong>
+                <small>Productos por reponer</small>
+              </div>
             </div>
 
-            <div className="card dashboard-panel">
-              <h2>Resumen rápido</h2>
-              <div className="summary-row"><span>Productos</span><strong>{products.length}</strong></div>
-              <div className="summary-row"><span>Ventas realizadas</span><strong>{sales.length}</strong></div>
-              <div className="summary-row"><span>Costo total</span><strong>{money(totalCost)}</strong></div>
-              <div className="summary-row"><span>Margen</span><strong>{totalSales ? `${((totalProfit / totalSales) * 100).toFixed(1)}%` : '0%'}</strong></div>
+            <div className="panel">
+              <h3>Resumen rápido</h3>
+              <div className="summary-grid">
+                <div className="summary-item">
+                  <span>Productos</span>
+                  <strong>{totalProducts}</strong>
+                </div>
+                <div className="summary-item">
+                  <span>Ventas realizadas</span>
+                  <strong>{totalSales}</strong>
+                </div>
+                <div className="summary-item">
+                  <span>Costo total</span>
+                  <strong>{money(cost)}</strong>
+                </div>
+                <div className="summary-item">
+                  <span>Margen</span>
+                  <strong>{margin}%</strong>
+                </div>
+              </div>
             </div>
           </section>
         )}
 
-        {activeTab === 'ventas' && (
-          <section className="sales-layout">
-            <div className="card">
-              <div className="section-title-row">
-                <h2>Productos</h2>
+        {tab === 'ventas' && (
+          <section>
+            <div className="page-header">
+              <div>
+                <span className="eyebrow">Punto de venta</span>
+                <h2>Ventas</h2>
+                <p>Agrega productos al carrito y controla el total.</p>
+              </div>
+            </div>
+
+            <div className="sales-layout">
+              <div className="panel">
+                <div className="panel-header">
+                  <h3>Productos</h3>
+                </div>
+
                 <input
-                  className="app-input"
+                  className="search-input"
+                  type="text"
                   placeholder="Buscar producto, categoría o SKU"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
                 />
-              </div>
-              <div className="product-list">
-                {filteredProducts.map((product) => (
-                  <div className="product-item" key={product.id}>
-                    <div>
-                      <div className="product-name">{product.name}</div>
-                      <div className="product-meta">{product.category} · {product.sku}</div>
-                      <div className="product-meta">Precio {money(product.price)} · Stock {product.stock}</div>
+
+                <div className="product-grid">
+                  {filteredProducts.map((product) => (
+                    <div className="product-card" key={product.id}>
+                      <div className="product-top">
+                        <div>
+                          <h4>{product.name}</h4>
+                          <p>{product.category}</p>
+                        </div>
+                        <span className="stock-badge">Stock {product.stock}</span>
+                      </div>
+
+                      <div className="product-meta">
+                        <span>{product.sku}</span>
+                        <strong>{money(product.price)}</strong>
+                      </div>
+
+                      <button
+                        className="primary-btn"
+                        onClick={() => addToCart(product)}
+                      >
+                        Agregar
+                      </button>
                     </div>
-                    <button className="primary-button" onClick={() => addToCart(product)}>
-                      Agregar
-                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="panel cart-panel">
+                <div className="panel-header">
+                  <h3>Carrito</h3>
+                </div>
+
+                {cart.length === 0 ? (
+                  <p className="empty-text">No hay productos en el carrito.</p>
+                ) : (
+                  <div className="cart-list">
+                    {cart.map((item) => (
+                      <div className="cart-item" key={item.id}>
+                        <div className="cart-info">
+                          <strong>{item.name}</strong>
+                          <span>{money(item.price)} c/u</span>
+                        </div>
+
+                        <div className="cart-actions">
+                          <button className="qty-btn" onClick={() => decreaseQty(item.id)}>
+                            -
+                          </button>
+                          <span className="qty">{item.qty}</span>
+                          <button className="qty-btn" onClick={() => increaseQty(item.id)}>
+                            +
+                          </button>
+                        </div>
+
+                        <div className="cart-total">{money(item.price * item.qty)}</div>
+
+                        <button
+                          className="remove-btn"
+                          onClick={() => removeFromCart(item.id)}
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                )}
 
-            <div className="card">
-              <h2>Carrito</h2>
-              <div className="cart-list">
-                {cart.length === 0 && <div className="empty-text">No hay productos en el carrito.</div>}
-                {cart.map((item) => (
-                  <div className="cart-item" key={item.id}>
-                    <div>
-                      <div className="product-name">{item.name}</div>
-                      <div className="product-meta">{money(item.price)} c/u</div>
-                    </div>
-                    <div className="cart-actions">
-                      <button className="qty-button" onClick={() => updateCartQty(item.id, item.qty - 1)}>-</button>
-                      <span>{item.qty}</span>
-                      <button className="qty-button" onClick={() => updateCartQty(item.id, item.qty + 1)}>+</button>
-                      <button className="danger-button" onClick={() => removeFromCart(item.id)}>Quitar</button>
-                    </div>
+                <div className="cart-summary">
+                  <div>
+                    <span>Subtotal</span>
+                    <strong>{money(subtotal)}</strong>
                   </div>
-                ))}
-              </div>
+                  <div>
+                    <span>Costo</span>
+                    <strong>{money(cost)}</strong>
+                  </div>
+                  <div>
+                    <span>Ganancia</span>
+                    <strong>{money(profit)}</strong>
+                  </div>
+                </div>
 
-              <div className="totals-box">
-                <div className="summary-row"><span>Subtotal</span><strong>{money(cartTotal)}</strong></div>
-                <div className="summary-row"><span>Costo</span><strong>{money(cartCost)}</strong></div>
-                <div className="summary-row"><span>Ganancia</span><strong>{money(cartProfit)}</strong></div>
+                <button className="checkout-btn">Finalizar venta</button>
               </div>
-
-              <button className="success-button" onClick={completeSale} disabled={!cart.length}>
-                Finalizar venta
-              </button>
             </div>
           </section>
         )}
 
-        {activeTab === 'inventario' && (
-          <section className="inventory-layout">
-            <div className="card">
-              <h2>Inventario actual</h2>
+        {tab === 'inventario' && (
+          <section>
+            <div className="page-header">
+              <div>
+                <span className="eyebrow">Control de productos</span>
+                <h2>Inventario</h2>
+                <p>Consulta existencias y precios de cada producto.</p>
+              </div>
+            </div>
+
+            <div className="panel">
               <div className="table-wrap">
-                <table className="app-table">
+                <table>
                   <thead>
                     <tr>
-                      <th>SKU</th>
                       <th>Producto</th>
                       <th>Categoría</th>
+                      <th>SKU</th>
                       <th>Precio</th>
-                      <th>Costo</th>
                       <th>Stock</th>
                     </tr>
                   </thead>
                   <tbody>
                     {products.map((product) => (
                       <tr key={product.id}>
-                        <td>{product.sku}</td>
                         <td>{product.name}</td>
                         <td>{product.category}</td>
+                        <td>{product.sku}</td>
                         <td>{money(product.price)}</td>
-                        <td>{money(product.cost)}</td>
                         <td>{product.stock}</td>
                       </tr>
                     ))}
@@ -307,51 +339,43 @@ export default function App() {
                 </table>
               </div>
             </div>
-
-            <div className="card form-card">
-              <h2>Nuevo producto</h2>
-              <input className="app-input" placeholder="Nombre" value={newProduct.name} onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} />
-              <input className="app-input" placeholder="Categoría" value={newProduct.category} onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })} />
-              <input className="app-input" placeholder="SKU (opcional)" value={newProduct.sku} onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })} />
-              <input className="app-input" type="number" placeholder="Precio" value={newProduct.price} onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })} />
-              <input className="app-input" type="number" placeholder="Costo" value={newProduct.cost} onChange={(e) => setNewProduct({ ...newProduct, cost: e.target.value })} />
-              <input className="app-input" type="number" placeholder="Stock" value={newProduct.stock} onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })} />
-              <button className="primary-button" onClick={addProduct}>Guardar producto</button>
-            </div>
           </section>
         )}
 
-        {activeTab === 'reportes' && (
-          <section className="card">
-            <h2>Historial de ventas</h2>
-            <div className="table-wrap">
-              <table className="app-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Fecha</th>
-                    <th>Total</th>
-                    <th>Costo</th>
-                    <th>Ganancia</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sales.map((sale) => (
-                    <tr key={sale.id}>
-                      <td>#{sale.id}</td>
-                      <td>{sale.date}</td>
-                      <td>{money(sale.total)}</td>
-                      <td>{money(sale.cost)}</td>
-                      <td>{money(sale.total - sale.cost)}</td>
-                    </tr>
-                  ))}
-                  {sales.length === 0 && (
-                    <tr>
-                      <td colSpan="5" className="empty-cell">Aún no hay ventas registradas.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+        {tab === 'reportes' && (
+          <section>
+            <div className="page-header">
+              <div>
+                <span className="eyebrow">Vista gerencial</span>
+                <h2>Reportes</h2>
+                <p>Resumen simple de la demo actual.</p>
+              </div>
+            </div>
+
+            <div className="stats-grid">
+              <div className="stat-card">
+                <span>Productos en carrito</span>
+                <strong>{cart.length}</strong>
+                <small>Artículos diferentes</small>
+              </div>
+
+              <div className="stat-card">
+                <span>Total actual</span>
+                <strong>{money(subtotal)}</strong>
+                <small>Venta en curso</small>
+              </div>
+
+              <div className="stat-card">
+                <span>Ganancia estimada</span>
+                <strong>{money(profit)}</strong>
+                <small>Con costo simulado</small>
+              </div>
+
+              <div className="stat-card">
+                <span>Margen</span>
+                <strong>{margin}%</strong>
+                <small>Rentabilidad</small>
+              </div>
             </div>
           </section>
         )}
