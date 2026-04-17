@@ -1,35 +1,62 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './styles.css'
-
-const initialProducts = [
-  { id: 1, name: 'Shampoo', category: 'Cabello', sku: 'BLD-001', price: 5, stock: 20 },
-  { id: 2, name: 'Perfume', category: 'Fragancias', sku: 'BLD-002', price: 12, stock: 10 },
-  { id: 3, name: 'Crema Facial', category: 'Skin Care', sku: 'BLD-003', price: 9, stock: 15 },
-  { id: 4, name: 'Labial Mate', category: 'Maquillaje', sku: 'BLD-004', price: 6, stock: 18 },
-]
+import { supabase } from './supabase'
 
 function money(value) {
   return new Intl.NumberFormat('es-SV', {
     style: 'currency',
     currency: 'USD',
-  }).format(value)
+  }).format(Number(value || 0))
 }
 
 export default function App() {
   const [tab, setTab] = useState('ventas')
   const [search, setSearch] = useState('')
   const [cart, setCart] = useState([])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
 
-  const products = initialProducts
+  const [newProduct, setNewProduct] = useState({
+    name: '',
+    category: '',
+    sku: '',
+    price: '',
+    stock: '',
+  })
+
+  async function loadProducts() {
+    setLoading(true)
+    setErrorMessage('')
+
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('id', { ascending: true })
+
+    if (error) {
+      setErrorMessage(error.message)
+      setProducts([])
+    } else {
+      setProducts(data || [])
+    }
+
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadProducts()
+  }, [])
 
   const filteredProducts = useMemo(() => {
     const q = search.toLowerCase().trim()
     if (!q) return products
+
     return products.filter(
       (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q)
+        p.name?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q) ||
+        p.sku?.toLowerCase().includes(q)
     )
   }, [search, products])
 
@@ -78,13 +105,42 @@ export default function App() {
     setTab('dashboard')
   }
 
+  async function addProduct(e) {
+    e.preventDefault()
+    setErrorMessage('')
+
+    const payload = {
+      name: newProduct.name.trim(),
+      category: newProduct.category.trim(),
+      sku: newProduct.sku.trim(),
+      price: Number(newProduct.price),
+      stock: Number(newProduct.stock),
+    }
+
+    const { error } = await supabase.from('products').insert(payload)
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    setNewProduct({
+      name: '',
+      category: '',
+      sku: '',
+      price: '',
+      stock: '',
+    })
+
+    await loadProducts()
+    setTab('inventario')
+  }
+
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0)
   const cost = cart.reduce((acc, item) => acc + item.qty * (item.price * 0.55), 0)
   const profit = subtotal - cost
-  const stockLow = products.filter((p) => p.stock <= 10).length
-
+  const stockLow = products.filter((p) => Number(p.stock) <= 10).length
   const totalProducts = products.length
-  const totalSales = 0
   const averageTicket = 0
   const margin = subtotal > 0 ? ((profit / subtotal) * 100).toFixed(0) : 0
 
@@ -127,66 +183,51 @@ export default function App() {
         </nav>
 
         <button className="reset-btn" onClick={resetDemo}>
-          Reiniciar demo
+          Reiniciar vista
         </button>
       </aside>
 
       <main className="main-content">
+        {errorMessage && (
+          <div className="panel" style={{ marginBottom: 20, border: '1px solid rgba(248,113,113,.35)' }}>
+            <h3>Error</h3>
+            <p>{errorMessage}</p>
+          </div>
+        )}
+
         {tab === 'dashboard' && (
           <section>
             <div className="page-header">
               <div>
                 <span className="eyebrow">Resumen general</span>
                 <h2>Dashboard</h2>
-                <p>Blondie Cosmetic · listo para GitHub y Vercel</p>
+                <p>{loading ? 'Cargando productos...' : 'Inventario conectado con Supabase'}</p>
               </div>
             </div>
 
             <div className="stats-grid">
               <div className="stat-card">
-                <span>Ventas totales</span>
+                <span>Productos</span>
+                <strong>{totalProducts}</strong>
+                <small>En base de datos</small>
+              </div>
+
+              <div className="stat-card">
+                <span>Venta actual</span>
                 <strong>{money(subtotal)}</strong>
-                <small>Ingresos acumulados</small>
+                <small>Carrito en curso</small>
               </div>
 
               <div className="stat-card">
-                <span>Ganancia</span>
+                <span>Ganancia estimada</span>
                 <strong>{money(profit)}</strong>
-                <small>Ventas - costo</small>
-              </div>
-
-              <div className="stat-card">
-                <span>Ticket promedio</span>
-                <strong>{money(averageTicket)}</strong>
-                <small>Promedio por venta</small>
+                <small>Con costo simulado</small>
               </div>
 
               <div className="stat-card">
                 <span>Stock bajo</span>
                 <strong>{stockLow}</strong>
                 <small>Productos por reponer</small>
-              </div>
-            </div>
-
-            <div className="panel">
-              <h3>Resumen rápido</h3>
-              <div className="summary-grid">
-                <div className="summary-item">
-                  <span>Productos</span>
-                  <strong>{totalProducts}</strong>
-                </div>
-                <div className="summary-item">
-                  <span>Ventas realizadas</span>
-                  <strong>{totalSales}</strong>
-                </div>
-                <div className="summary-item">
-                  <span>Costo total</span>
-                  <strong>{money(cost)}</strong>
-                </div>
-                <div className="summary-item">
-                  <span>Margen</span>
-                  <strong>{margin}%</strong>
-                </div>
               </div>
             </div>
           </section>
@@ -198,7 +239,7 @@ export default function App() {
               <div>
                 <span className="eyebrow">Punto de venta</span>
                 <h2>Ventas</h2>
-                <p>Agrega productos al carrito y controla el total.</p>
+                <p>Productos traídos desde la base de datos.</p>
               </div>
             </div>
 
@@ -216,31 +257,35 @@ export default function App() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
 
-                <div className="product-grid">
-                  {filteredProducts.map((product) => (
-                    <div className="product-card" key={product.id}>
-                      <div className="product-top">
-                        <div>
-                          <h4>{product.name}</h4>
-                          <p>{product.category}</p>
+                {loading ? (
+                  <p className="empty-text">Cargando productos...</p>
+                ) : (
+                  <div className="product-grid">
+                    {filteredProducts.map((product) => (
+                      <div className="product-card" key={product.id}>
+                        <div className="product-top">
+                          <div>
+                            <h4>{product.name}</h4>
+                            <p>{product.category}</p>
+                          </div>
+                          <span className="stock-badge">Stock {product.stock}</span>
                         </div>
-                        <span className="stock-badge">Stock {product.stock}</span>
-                      </div>
 
-                      <div className="product-meta">
-                        <span>{product.sku}</span>
-                        <strong>{money(product.price)}</strong>
-                      </div>
+                        <div className="product-meta">
+                          <span>{product.sku}</span>
+                          <strong>{money(product.price)}</strong>
+                        </div>
 
-                      <button
-                        className="primary-btn"
-                        onClick={() => addToCart(product)}
-                      >
-                        Agregar
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                        <button
+                          className="primary-btn"
+                          onClick={() => addToCart(product)}
+                        >
+                          Agregar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="panel cart-panel">
@@ -307,10 +352,53 @@ export default function App() {
           <section>
             <div className="page-header">
               <div>
-                <span className="eyebrow">Control de productos</span>
+                <span className="eyebrow">Inventario real</span>
                 <h2>Inventario</h2>
-                <p>Consulta existencias y precios de cada producto.</p>
+                <p>Aquí ya puedes agregar productos a Supabase.</p>
               </div>
+            </div>
+
+            <div className="panel" style={{ marginBottom: 20 }}>
+              <h3>Nuevo producto</h3>
+
+              <form onSubmit={addProduct} className="summary-grid">
+                <input
+                  className="search-input"
+                  placeholder="Nombre"
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                />
+                <input
+                  className="search-input"
+                  placeholder="Categoría"
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                />
+                <input
+                  className="search-input"
+                  placeholder="SKU"
+                  value={newProduct.sku}
+                  onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                />
+                <input
+                  className="search-input"
+                  placeholder="Precio"
+                  type="number"
+                  step="0.01"
+                  value={newProduct.price}
+                  onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                />
+                <input
+                  className="search-input"
+                  placeholder="Stock"
+                  type="number"
+                  value={newProduct.stock}
+                  onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+                />
+                <button className="primary-btn" type="submit">
+                  Guardar producto
+                </button>
+              </form>
             </div>
 
             <div className="panel">
@@ -348,7 +436,7 @@ export default function App() {
               <div>
                 <span className="eyebrow">Vista gerencial</span>
                 <h2>Reportes</h2>
-                <p>Resumen simple de la demo actual.</p>
+                <p>Resumen del inventario y del carrito actual.</p>
               </div>
             </div>
 
@@ -356,7 +444,7 @@ export default function App() {
               <div className="stat-card">
                 <span>Productos en carrito</span>
                 <strong>{cart.length}</strong>
-                <small>Artículos diferentes</small>
+                <small>Artículos distintos</small>
               </div>
 
               <div className="stat-card">
@@ -372,9 +460,9 @@ export default function App() {
               </div>
 
               <div className="stat-card">
-                <span>Margen</span>
-                <strong>{margin}%</strong>
-                <small>Rentabilidad</small>
+                <span>Productos cargados</span>
+                <strong>{products.length}</strong>
+                <small>Desde Supabase</small>
               </div>
             </div>
           </section>
