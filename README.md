@@ -1,37 +1,16 @@
-# Blondie Cosmetic
+# React + Vite
 
-Proyecto listo para subir a GitHub y desplegar en Vercel.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Requisitos
-- Node.js 18 o superior
+Currently, two official plugins are available:
 
-## Instalar
-```bash
-npm install
-```
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Ejecutar local
-```bash
-npm run dev
-```
+## React Compiler
 
-## Compilar
-```bash
-npm run build
-```
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Subir a GitHub
-1. Crea un repositorio nuevo en GitHub.
-2. Sube todos los archivos de esta carpeta.
-3. Verifica que `package.json` quede en la raíz del repositorio.
+## Expanding the ESLint configuration
 
-## Desplegar en Vercel
-1. Entra a Vercel.
-2. Importa tu repositorio de GitHub.
-3. Framework: Vite.
-4. Build command: `npm run build`
-5. Output directory: `dist`
-6. Deploy.
-
-## Nota
-Esta versión guarda datos en el navegador. Para sincronizar iPhone + PC, el siguiente paso es conectar Supabase.
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
