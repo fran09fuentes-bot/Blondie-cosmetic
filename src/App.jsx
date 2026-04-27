@@ -1,37 +1,16 @@
-import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom'
-
-// Páginas placeholder
-function Ventas() { return <Pagina titulo="💰 Ventas" /> }
-function Inventario() { return <Pagina titulo="📦 Inventario" /> }
-function Clientes() { return <Pagina titulo="👤 Clientes" /> }
-function Reporte() { return <Pagina titulo="📅 Reportes" /> }
-function Metas() { return <Pagina titulo="🎯 Metas" /> }
-function Caja() { return <Pagina titulo="🏧 Caja del día" /> }
-function CajaChica() { return <Pagina titulo="💵 Caja chica" /> }
-function Proveedores() { return <Pagina titulo="🚚 Proveedores" /> }
-function Puntos() { return <Pagina titulo="⭐ Puntos" /> }
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import Inventario from './pages/Inventario'
 
 function Pagina({ titulo }) {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <div className="bg-pink-950 px-6 py-4 flex items-center justify-between">
+        <Link to="/"><h1 className="text-xl font-bold text-white">Blondie <span className="text-pink-300">Cosmetic</span></h1></Link>
+      </div>
       <div className="p-6 max-w-2xl mx-auto">
         <h2 className="text-2xl font-bold text-pink-900 mb-4">{titulo}</h2>
-        <div className="bg-white rounded-2xl p-8 border border-pink-100 text-center text-gray-400">
-          Módulo en construcción 🌸
-        </div>
+        <div className="bg-white rounded-2xl p-8 border border-pink-100 text-center text-gray-400">Módulo en construcción 🌸</div>
       </div>
-    </div>
-  )
-}
-
-function Header() {
-  return (
-    <div className="bg-pink-950 px-6 py-4 flex items-center justify-between">
-      <Link to="/">
-        <h1 className="text-xl font-bold text-white">Blondie <span className="text-pink-300">Cosmetic</span></h1>
-        <p className="text-pink-400 text-xs">Sistema de ventas</p>
-      </Link>
     </div>
   )
 }
@@ -48,10 +27,12 @@ function Dashboard() {
     { icon: '🚚', label: 'Proveedores', path: '/proveedores' },
     { icon: '⭐', label: 'Puntos', path: '/puntos' },
   ]
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <div className="bg-pink-950 px-6 py-4">
+        <h1 className="text-xl font-bold text-white">Blondie <span className="text-pink-300">Cosmetic</span></h1>
+        <p className="text-pink-400 text-xs">Sistema de ventas</p>
+      </div>
       <div className="p-4 max-w-2xl mx-auto">
         <div className="bg-pink-950 rounded-2xl p-4 mb-4 grid grid-cols-2 gap-3">
           <div><p className="text-pink-400 text-xs">Ventas hoy</p><p className="text-white text-2xl font-bold">$0</p></div>
@@ -80,15 +61,15 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/ventas" element={<Ventas />} />
         <Route path="/inventario" element={<Inventario />} />
-        <Route path="/clientes" element={<Clientes />} />
-        <Route path="/reporte" element={<Reporte />} />
-        <Route path="/metas" element={<Metas />} />
-        <Route path="/caja" element={<Caja />} />
-        <Route path="/caja-chica" element={<CajaChica />} />
-        <Route path="/proveedores" element={<Proveedores />} />
-        <Route path="/puntos" element={<Puntos />} />
+        <Route path="/ventas" element={<Pagina titulo="💰 Ventas" />} />
+        <Route path="/clientes" element={<Pagina titulo="👤 Clientes" />} />
+        <Route path="/reporte" element={<Pagina titulo="📅 Reportes" />} />
+        <Route path="/metas" element={<Pagina titulo="🎯 Metas" />} />
+        <Route path="/caja" element={<Pagina titulo="🏧 Caja del día" />} />
+        <Route path="/caja-chica" element={<Pagina titulo="💵 Caja chica" />} />
+        <Route path="/proveedores" element={<Pagina titulo="🚚 Proveedores" />} />
+        <Route path="/puntos" element={<Pagina titulo="⭐ Puntos" />} />
       </Routes>
     </BrowserRouter>
   )
