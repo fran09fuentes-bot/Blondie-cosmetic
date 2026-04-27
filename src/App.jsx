@@ -31,7 +31,7 @@ function Dashboard() {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-pink-950 px-6 py-4">
         <h1 className="text-xl font-bold text-white">Blondie <span className="text-pink-300">Cosmetic</span></h1>
-        <p className="text-pink-400 text-xs">Sistema de ventas</p>
+        <p className="text-pink-400 text-xs">Sistema de ventas 🌸</p>
       </div>
       <div className="p-4 max-w-2xl mx-auto">
         <div className="bg-pink-950 rounded-2xl p-4 mb-4 grid grid-cols-2 gap-3">
