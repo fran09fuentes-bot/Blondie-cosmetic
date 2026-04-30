@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Inventario from './pages/Inventario'
 import Ventas from './pages/Ventas'
 import Clientes from './pages/Clientes'
-import Reporte from './pages/Reporte'
+import Reporte from './pages/Reportes'
 
 function Pagina({ titulo }) {
   return (
