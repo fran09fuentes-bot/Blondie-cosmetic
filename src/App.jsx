@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Inventario from './pages/Inventario'
 import Ventas from './pages/Ventas'
 import Clientes from './pages/Clientes'
+import Reporte from './pages/Reporte'
 
 function Pagina({ titulo }) {
   return (
@@ -68,7 +69,7 @@ function App() {
         <Route path="/inventario" element={<Inventario />} />
         <Route path="/ventas" element={<Ventas />} />
         <Route path="/clientes" element={<Clientes />} />
-        <Route path="/reporte" element={<Pagina titulo="Reportes" />} />
+        <Route path="/reporte" element={<Reporte />} />
         <Route path="/metas" element={<Pagina titulo="Metas" />} />
         <Route path="/caja" element={<Pagina titulo="Caja del dia" />} />
         <Route path="/caja-chica" element={<Pagina titulo="Caja chica" />} />
