@@ -3,6 +3,7 @@ import Inventario from './pages/Inventario'
 import Ventas from './pages/Ventas'
 import Clientes from './pages/Clientes'
 import Reporte from './pages/Reportes'
+import Caja from './pages/Caja'
 
 function Pagina({ titulo }) {
   return (
@@ -70,8 +71,8 @@ function App() {
         <Route path="/ventas" element={<Ventas />} />
         <Route path="/clientes" element={<Clientes />} />
         <Route path="/reporte" element={<Reporte />} />
+        <Route path="/caja" element={<Caja />} />
         <Route path="/metas" element={<Pagina titulo="Metas" />} />
-        <Route path="/caja" element={<Pagina titulo="Caja del dia" />} />
         <Route path="/caja-chica" element={<Pagina titulo="Caja chica" />} />
         <Route path="/proveedores" element={<Pagina titulo="Proveedores" />} />
         <Route path="/puntos" element={<Pagina titulo="Puntos" />} />
