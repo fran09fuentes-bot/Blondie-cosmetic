@@ -14,7 +14,7 @@ export default function Caja() {
   const cargarDatos = async function() {
     const hoy = new Date().toISOString().split('T')[0]
     const { data: v } = await supabase.from('ventas').select('*').gte('created_at', hoy)
-    const { data: g } = await supabase.from('gastos').select('*').gte('created_at', hoy)
+    const { data: g } = await supabase.from('gastos').select('*')
     if (v) setVentas(v)
     if (g) setGastos(g)
   }
