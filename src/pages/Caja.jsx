@@ -14,7 +14,7 @@ export default function Caja() {
   const cargarDatos = async function() {
     const hoy = new Date().toISOString().split('T')[0]
     const { data: v } = await supabase.from('ventas').select('*').gte('created_at', hoy)
-    const { data: g } = await supabase.from('gastos').select('*').eq('fecha', hoy)
+    const { data: g } = await supabase.from('gastos').select('*').gte('created_at', hoy)
     if (v) setVentas(v)
     if (g) setGastos(g)
   }
@@ -25,8 +25,7 @@ export default function Caja() {
     const { error } = await supabase.from('gastos').insert([{
       descripcion: form.descripcion,
       monto: parseFloat(form.monto),
-      categoria: form.categoria,
-      fecha: new Date().toISOString().split('T')[0]
+      categoria: form.categoria
     }])
     if (!error) {
       await cargarDatos()
