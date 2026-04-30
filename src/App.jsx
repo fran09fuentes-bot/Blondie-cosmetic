@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import Inventario from './pages/Inventario'
 import Ventas from './pages/Ventas'
+import Clientes from './pages/Clientes'
 
 function Pagina({ titulo }) {
   return (
@@ -66,7 +67,7 @@ function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/inventario" element={<Inventario />} />
         <Route path="/ventas" element={<Ventas />} />
-        <Route path="/clientes" element={<Pagina titulo="Clientes" />} />
+        <Route path="/clientes" element={<Clientes />} />
         <Route path="/reporte" element={<Pagina titulo="Reportes" />} />
         <Route path="/metas" element={<Pagina titulo="Metas" />} />
         <Route path="/caja" element={<Pagina titulo="Caja del dia" />} />
