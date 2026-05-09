@@ -9,20 +9,16 @@ export default function Inventario() {
   const [vista, setVista] = useState('lista')
   const [busqueda, setBusqueda] = useState('')
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({
-    nombre: '', marca: '', categoria: 'Facial', codigo: '',
-    precio_costo: '', precio_venta: '', stock: '', stock_minimo: '5',
-    fecha_vencimiento: '', notas: ''
-  })
+  const [form, setForm] = useState({ nombre: '', marca: '', categoria: 'Facial', codigo: '', precio_costo: '', precio_venta: '', stock: '', stock_minimo: '5', fecha_vencimiento: '', notas: '' })
 
-  useEffect(() => { cargarProductos() }, [])
+  useEffect(function() { cargarProductos() }, [])
 
-  const cargarProductos = async () => {
+  const cargarProductos = async function() {
     const { data } = await supabase.from('productos').select('*').eq('activo', true).order('nombre')
     if (data) setProductos(data)
   }
 
-  const guardarProducto = async () => {
+  const guardarProducto = async function() {
     setLoading(true)
     const { error } = await supabase.from('productos').insert([{
       ...form,
@@ -39,9 +35,8 @@ export default function Inventario() {
     setLoading(false)
   }
 
-  const productosFiltrados = productos.filter(function(p) {
-    return p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      (p.marca && p.marca.toLowerCase().includes(busqueda.toLowerCase()))
+  const filtrados = productos.filter(function(p) {
+    return p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || (p.marca && p.marca.toLowerCase().includes(busqueda.toLowerCase()))
   })
 
   const stockBajo = productos.filter(function(p) { return p.stock <= p.stock_minimo }).length
@@ -54,23 +49,16 @@ export default function Inventario() {
       </div>
       <div className="p-4 max-w-2xl mx-auto">
         <div className="flex gap-2 mb-4">
-          <button onClick={() => setVista('lista')} className={vista === 'lista' ? 'flex-1 py-2 rounded-xl text-sm font-medium bg-pink-600 text-white' : 'flex-1 py-2 rounded-xl text-sm font-medium bg-white border border-pink-200 text-pink-700'}>Ver productos</button>
-          <button onClick={() => setVista('agregar')} className={vista === 'agregar' ? 'flex-1 py-2 rounded-xl text-sm font-medium bg-pink-600 text-white' : 'flex-1 py-2 rounded-xl text-sm font-medium bg-white border border-pink-200 text-pink-700'}>+ Agregar</button>
+          <button onClick={function() { setVista('lista') }} className={vista === 'lista' ? 'flex-1 py-2 rounded-xl text-sm font-medium bg-pink-600 text-white' : 'flex-1 py-2 rounded-xl text-sm font-medium bg-white border border-pink-200 text-pink-700'}>Ver productos</button>
+          <button onClick={function() { setVista('agregar') }} className={vista === 'agregar' ? 'flex-1 py-2 rounded-xl text-sm font-medium bg-pink-600 text-white' : 'flex-1 py-2 rounded-xl text-sm font-medium bg-white border border-pink-200 text-pink-700'}>+ Agregar</button>
         </div>
-
         {vista === 'lista' && (
           <div>
-            {stockBajo > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-sm text-amber-700">
-                Alerta: {stockBajo} producto con stock bajo
-              </div>
-            )}
-            <input value={busqueda} onChange={function(e){ setBusqueda(e.target.value) }} placeholder="Buscar producto..." className="w-full bg-white border border-pink-100 rounded-xl px-4 py-2.5 text-sm mb-4 outline-none" />
+            {stockBajo > 0 && <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-sm text-amber-700">Alerta: {stockBajo} producto con stock bajo</div>}
+            <input value={busqueda} onChange={function(e) { setBusqueda(e.target.value) }} placeholder="Buscar producto..." className="w-full bg-white border border-pink-100 rounded-xl px-4 py-2.5 text-sm mb-4 outline-none" />
             <div className="flex flex-col gap-3">
-              {productosFiltrados.length === 0 && (
-                <div className="bg-white rounded-2xl p-8 text-center text-gray-400 border border-pink-100">No hay productos aun</div>
-              )}
-              {productosFiltrados.map(function(p) {
+              {filtrados.length === 0 && <div className="bg-white rounded-2xl p-8 text-center text-gray-400 border border-pink-100">No hay productos aun</div>}
+              {filtrados.map(function(p) {
                 return (
                   <div key={p.id} className="bg-white rounded-2xl p-4 border border-pink-100 flex items-center gap-3">
                     <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center text-lg flex-shrink-0">💄</div>
@@ -88,57 +76,25 @@ export default function Inventario() {
             </div>
           </div>
         )}
-
         {vista === 'agregar' && (
           <div className="bg-white rounded-2xl p-4 border border-pink-100 flex flex-col gap-4">
             <h2 className="font-bold text-pink-900">Nuevo producto</h2>
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Nombre</label>
-              <input value={form.nombre} onChange={function(e){ setForm({...form, nombre: e.target.value}) }} placeholder="Base liquida Mac Studio" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" />
+            <div><label className="text-xs text-gray-500 mb-1 block">Nombre</label><input value={form.nombre} onChange={function(e) { setForm({...form, nombre: e.target.value}) }} placeholder="Base liquida Mac Studio" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-xs text-gray-500 mb-1 block">Marca</label><input value={form.marca} onChange={function(e) { setForm({...form, marca: e.target.value}) }} placeholder="MAC, NYX..." className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" /></div>
+              <div><label className="text-xs text-gray-500 mb-1 block">Codigo</label><input value={form.codigo} onChange={function(e) { setForm({...form, codigo: e.target.value}) }} placeholder="MAC-001" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" /></div>
+            </div>
+            <div><label className="text-xs text-gray-500 mb-1 block">Categoria</label><select value={form.categoria} onChange={function(e) { setForm({...form, categoria: e.target.value}) }} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none">{categorias.map(function(c) { return <option key={c}>{c}</option> })}</select></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="text-xs text-gray-500 mb-1 block">Precio costo</label><input type="number" value={form.precio_costo} onChange={function(e) { setForm({...form, precio_costo: e.target.value}) }} placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" /></div>
+              <div><label className="text-xs text-gray-500 mb-1 block">Precio venta</label><input type="number" value={form.precio_venta} onChange={function(e) { setForm({...form, precio_venta: e.target.value}) }} placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Marca</label>
-                <input value={form.marca} onChange={function(e){ setForm({...form, marca: e.target.value}) }} placeholder="MAC, NYX..." className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Codigo</label>
-                <input value={form.codigo} onChange={function(e){ setForm({...form, codigo: e.target.value}) }} placeholder="MAC-001" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" />
-              </div>
+              <div><label className="text-xs text-gray-500 mb-1 block">Stock inicial</label><input type="number" value={form.stock} onChange={function(e) { setForm({...form, stock: e.target.value}) }} placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" /></div>
+              <div><label className="text-xs text-gray-500 mb-1 block">Alerta stock bajo</label><input type="number" value={form.stock_minimo} onChange={function(e) { setForm({...form, stock_minimo: e.target.value}) }} placeholder="5" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" /></div>
             </div>
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Categoria</label>
-              <select value={form.categoria} onChange={function(e){ setForm({...form, categoria: e.target.value}) }} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none">
-                {categorias.map(function(c){ return <option key={c}>{c}</option> })}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Precio costo</label>
-                <input type="number" value={form.precio_costo} onChange={function(e){ setForm({...form, precio_costo: e.target.value}) }} placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Precio venta</label>
-                <input type="number" value={form.precio_venta} onChange={function(e){ setForm({...form, precio_venta: e.target.value}) }} placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Stock inicial</label>
-                <input type="number" value={form.stock} onChange={function(e){ setForm({...form, stock: e.target.value}) }} placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 mb-1 block">Alerta stock bajo</label>
-                <input type="number" value={form.stock_minimo} onChange={function(e){ setForm({...form, stock_minimo: e.target.value}) }} placeholder="5" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Fecha vencimiento</label>
-              <input type="date" value={form.fecha_vencimiento} onChange={function(e){ setForm({...form, fecha_vencimiento: e.target.value}) }} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" />
-            </div>
-            <button onClick={guardarProducto} disabled={loading || !form.nombre} className="w-full bg-pink-600 text-white font-medium py-3 rounded-xl text-sm">
-              {loading ? 'Guardando...' : 'Guardar producto'}
-            </button>
+            <div><label className="text-xs text-gray-500 mb-1 block">Fecha vencimiento</label><input type="date" value={form.fecha_vencimiento} onChange={function(e) { setForm({...form, fecha_vencimiento: e.target.value}) }} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" /></div>
+            <button onClick={guardarProducto} disabled={loading || !form.nombre} className="w-full bg-pink-600 text-white font-medium py-3 rounded-xl text-sm">{loading ? 'Guardando...' : 'Guardar producto'}</button>
           </div>
         )}
       </div>
