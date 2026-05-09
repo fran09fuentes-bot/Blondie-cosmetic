@@ -14,7 +14,7 @@ export default function Caja() {
   const cargarDatos = async function() {
     const hoy = new Date().toISOString().split('T')[0]
     const { data: v } = await supabase.from('ventas').select('*').gte('created_at', hoy)
-    const { data: g } = await supabase.from('gastos').select('*')
+    const { data: g } = await supabase.from('gastos').select('*').gte('created_at', hoy)
     if (v) setVentas(v)
     if (g) setGastos(g)
   }
@@ -22,17 +22,8 @@ export default function Caja() {
   const guardarGasto = async function() {
     if (!form.descripcion || !form.monto) return
     setLoading(true)
-    const { error } = await supabase.from('gastos').insert([{
-      descripcion: form.descripcion,
-      monto: parseFloat(form.monto),
-      categoria: form.categoria
-    }])
-    if (!error) {
-      await cargarDatos()
-      setForm({ descripcion: '', monto: '', categoria: 'operacion' })
-      setExito(true)
-      setTimeout(function() { setExito(false) }, 2000)
-    }
+    const { error } = await supabase.from('gastos').insert([{ descripcion: form.descripcion, monto: parseFloat(form.monto), categoria: form.categoria }])
+    if (!error) { await cargarDatos(); setForm({ descripcion: '', monto: '', categoria: 'operacion' }); setExito(true); setTimeout(function() { setExito(false) }, 2000) }
     setLoading(false)
   }
 
@@ -84,7 +75,7 @@ export default function Caja() {
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Gastos de hoy</p>
             {gastos.map(function(g) {
               return (
-                <div key={g.id} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+                <div key={g.id} className="flex justify-between items-center py-2 border-b border-gray-50">
                   <div><p className="text-sm text-gray-800">{g.descripcion}</p><p className="text-xs text-gray-400">{g.categoria}</p></div>
                   <p className="text-sm font-bold text-red-500">${g.monto}</p>
                 </div>
