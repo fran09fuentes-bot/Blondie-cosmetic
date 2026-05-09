@@ -23,7 +23,12 @@ export default function Caja() {
     if (!form.descripcion || !form.monto) return
     setLoading(true)
     const { error } = await supabase.from('gastos').insert([{ descripcion: form.descripcion, monto: parseFloat(form.monto), categoria: form.categoria }])
-    if (!error) { await cargarDatos(); setForm({ descripcion: '', monto: '', categoria: 'operacion' }); setExito(true); setTimeout(function() { setExito(false) }, 2000) }
+    if (!error) {
+      await cargarDatos()
+      setForm({ descripcion: '', monto: '', categoria: 'operacion' })
+      setExito(true)
+      setTimeout(function() { setExito(false) }, 2000)
+    }
     setLoading(false)
   }
 
@@ -49,14 +54,14 @@ export default function Caja() {
         <div className="bg-white rounded-2xl p-4 border border-pink-100">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Desglose de caja</p>
           <div className="flex flex-col gap-2">
-            <div className="flex justify-between"><span className="text-sm text-gray-600">Efectivo</span><span className="text-sm font-bold text-gray-800">${efectivo}</span></div>
-            <div className="flex justify-between"><span className="text-sm text-gray-600">Tarjeta</span><span className="text-sm font-bold text-gray-800">${tarjeta}</span></div>
-            <div className="flex justify-between"><span className="text-sm text-gray-600">Transferencia</span><span className="text-sm font-bold text-gray-800">${transferencia}</span></div>
-            <div className="border-t border-gray-100 pt-2 flex justify-between"><span className="text-sm font-bold text-gray-700">Total</span><span className="text-sm font-bold text-pink-600">${totalVentas}</span></div>
+            <div className="flex justify-between"><span className="text-sm text-gray-600">Efectivo</span><span className="text-sm font-bold">${efectivo}</span></div>
+            <div className="flex justify-between"><span className="text-sm text-gray-600">Tarjeta</span><span className="text-sm font-bold">${tarjeta}</span></div>
+            <div className="flex justify-between"><span className="text-sm text-gray-600">Transferencia</span><span className="text-sm font-bold">${transferencia}</span></div>
+            <div className="border-t border-gray-100 pt-2 flex justify-between"><span className="text-sm font-bold">Total</span><span className="text-sm font-bold text-pink-600">${totalVentas}</span></div>
           </div>
         </div>
         <div className="bg-white rounded-2xl p-4 border border-pink-100">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Registrar gasto del dia</p>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Registrar gasto</p>
           {exito && <div className="bg-green-50 border border-green-200 rounded-xl p-2 mb-3 text-sm text-green-700 text-center">Gasto registrado</div>}
           <div className="flex flex-col gap-3">
             <input value={form.descripcion} onChange={function(e) { setForm({...form, descripcion: e.target.value}) }} placeholder="Descripcion del gasto" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none" />
