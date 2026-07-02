@@ -20,9 +20,11 @@ export default function Ventas() {
   const agregarAlCarrito = function(producto) {
     const existe = carrito.find(function(i) { return i.id === producto.id })
     if (existe) {
-      setCarrito(carrito.map(function(i) { return i.id === producto.id ? {...i, cantidad: i.cantidad + 1, subtotal: (i.cantidad + 1) * i.precio_unitario} : i }))
+      setCarrito(carrito.map(function(i) {
+        return i.id === producto.id ? {...i, cantidad: i.cantidad + 1, subtotal: (i.cantidad + 1) * i.precio_unitario} : i
+      }))
     } else {
-      setCarrito([...carrito, { id: producto.id, nombre: producto.nombre, codigo: producto.codigo, precio_unitario: producto.precio_unitario, cantidad: 1, subtotal: producto.precio_unitario, stock_disponible: producto.stock }])
+      setCarrito([...carrito, { id: producto.id, nombre: producto.nombre, precio_unitario: producto.precio_venta, cantidad: 1, subtotal: producto.precio_venta }])
     }
   }
 
@@ -30,146 +32,81 @@ export default function Ventas() {
     setCarrito(carrito.filter(function(i) { return i.id !== id }))
   }
 
-  const cambiarCantidad = function(id, nuevaCantidad) {
-    if (nuevaCantidad < 1) {
-      quitarDelCarrito(id)
-      return
-    }
-    setCarrito(carrito.map(function(i) { return i.id === id ? {...i, cantidad: nuevaCantidad, subtotal: nuevaCantidad * i.precio_unitario} : i }))
-  }
-
   const total = carrito.reduce(function(acc, i) { return acc + i.subtotal }, 0)
 
-  const productosFiltrados = productos.filter(function(p) {
-    const texto = busqueda.toLowerCase()
-    return p.nombre.toLowerCase().includes(texto) || (p.codigo && p.codigo.toLowerCase().includes(texto))
-  })
-
-  const procesarVenta = async function() {
+  const cobrar = async function() {
     if (carrito.length === 0) return
     setLoading(true)
-
-    const { data: venta, error: errorVenta } = await supabase
-      .from('ventas')
-      .insert({ total: total, metodo_pago: metodo, fecha: new Date().toISOString() })
-      .select()
-      .single()
-
-    if (errorVenta || !venta) {
-      alert('Error al crear la venta: ' + (errorVenta ? errorVenta.message : 'sin datos'))
-      setLoading(false)
-      return
-    }
-
-    const items = carrito.map(function(i) {
-      return {
-        venta_id: venta.id,
-        producto_id: i.id,
-        cantidad: i.cantidad,
-        precio_unitario: i.precio_unitario,
-        subtotal: i.subtotal
+    const { data: venta, error } = await supabase.from('ventas').insert([{ total: total, metodo_pago: metodo }]).select().single()
+    if (!error && venta) {
+      await supabase.from('venta_items').insert(carrito.map(function(i) { return { venta_id: venta.id, producto_id: i.id, cantidad: i.cantidad, precio_unitario: i.precio_unitario, subtotal: i.subtotal } }))
+      for (const item of carrito) {
+        const prod = productos.find(function(p) { return p.id === item.id })
+        if (prod) await supabase.from('productos').update({ stock: prod.stock - item.cantidad }).eq('id', item.id)
       }
-    })
-
-    const { error: errorItems } = await supabase.from('venta_items').insert(items)
-
-    if (errorItems) {
-      alert('Error al guardar los productos de la venta: ' + errorItems.message)
-      setLoading(false)
-      return
+      setCarrito([])
+      setExito(true)
+      await cargarProductos()
+      setTimeout(function() { setExito(false) }, 3000)
     }
-
-    for (const item of carrito) {
-      const nuevoStock = item.stock_disponible - item.cantidad
-      await supabase.from('productos').update({ stock: nuevoStock }).eq('id', item.id)
-    }
-
-    setCarrito([])
-    setExito(true)
     setLoading(false)
-    cargarProductos()
-    setTimeout(function() { setExito(false) }, 3000)
   }
 
+  const productosFiltrados = productos.filter(function(p) {
+    return p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || (p.marca && p.marca.toLowerCase().includes(busqueda.toLowerCase()))
+  })
+
   return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1>Ventas</h1>
-        <Link to="/">Volver al inicio</Link>
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-pink-950 px-6 py-4 flex items-center justify-between">
+        <Link to="/"><h1 className="text-xl font-bold text-white">Blondie <span className="text-pink-300">Cosmetic</span></h1></Link>
+        <span className="text-pink-300 text-sm">Nueva venta</span>
       </div>
-
-      {exito && (
-        <div style={{ background: '#d4edda', color: '#155724', padding: '12px', borderRadius: '6px', marginBottom: '16px' }}>
-          Venta procesada correctamente.
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-        <div style={{ flex: '2', minWidth: '320px' }}>
-          <input
-            type="text"
-            placeholder="Buscar producto por nombre o codigo..."
-            value={busqueda}
-            onChange={function(e) { setBusqueda(e.target.value) }}
-            style={{ width: '100%', padding: '10px', marginBottom: '16px', boxSizing: 'border-box' }}
-          />
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-            {productosFiltrados.map(function(producto) {
-              return (
-                <div key={producto.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '12px' }}>
-                  <div style={{ fontWeight: 'bold' }}>{producto.nombre}</div>
-                  <div style={{ color: '#666', fontSize: '13px' }}>{producto.codigo}</div>
-                  <div style={{ margin: '6px 0' }}>${producto.precio_unitario.toFixed(2)}</div>
-                  <div style={{ fontSize: '12px', color: '#888' }}>Stock: {producto.stock}</div>
-                  <button onClick={function() { agregarAlCarrito(producto) }} style={{ marginTop: '8px', width: '100%' }}>
-                    Agregar
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        <div style={{ flex: '1', minWidth: '280px', border: '1px solid #ddd', borderRadius: '8px', padding: '16px', height: 'fit-content' }}>
-          <h3>Carrito</h3>
-          {carrito.length === 0 && <p style={{ color: '#888' }}>Sin productos agregados.</p>}
-
-          {carrito.map(function(item) {
+      <div className="p-4 max-w-2xl mx-auto">
+        {exito && <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-4 text-sm text-green-700 text-center">Venta registrada</div>}
+        <input value={busqueda} onChange={function(e) { setBusqueda(e.target.value) }} placeholder="Buscar producto..." className="w-full bg-white border border-pink-100 rounded-xl px-4 py-2.5 text-sm mb-4 outline-none" />
+        <div className="flex flex-col gap-2 mb-4">
+          {productosFiltrados.map(function(p) {
             return (
-              <div key={item.id} style={{ borderBottom: '1px solid #eee', paddingBottom: '8px', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{item.nombre}</span>
-                  <button onClick={function() { quitarDelCarrito(item.id) }} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer' }}>x</button>
+              <div key={p.id} className="bg-white rounded-xl p-3 border border-pink-100 flex items-center gap-3">
+                <div className="w-9 h-9 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">💄</div>
+                <div className="flex-1">
+                  <p className="font-medium text-gray-800 text-sm">{p.nombre}</p>
+                  <p className="text-xs text-gray-400">${p.precio_venta} · Stock: {p.stock}</p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                  <button onClick={function() { cambiarCantidad(item.id, item.cantidad - 1) }}>-</button>
-                  <span>{item.cantidad}</span>
-                  <button onClick={function() { cambiarCantidad(item.id, item.cantidad + 1) }}>+</button>
-                  <span style={{ marginLeft: 'auto' }}>${item.subtotal.toFixed(2)}</span>
-                </div>
+                <button onClick={function() { agregarAlCarrito(p) }} className="bg-pink-600 text-white rounded-lg w-8 h-8 text-lg font-bold flex items-center justify-center">+</button>
               </div>
             )
           })}
-
-          <div style={{ fontWeight: 'bold', fontSize: '18px', marginTop: '12px' }}>
-            Total: ${total.toFixed(2)}
-          </div>
-
-          <select value={metodo} onChange={function(e) { setMetodo(e.target.value) }} style={{ width: '100%', padding: '8px', marginTop: '12px' }}>
-            <option value="efectivo">Efectivo</option>
-            <option value="tarjeta">Tarjeta</option>
-            <option value="transferencia">Transferencia</option>
-          </select>
-
-          <button
-            onClick={procesarVenta}
-            disabled={loading || carrito.length === 0}
-            style={{ width: '100%', padding: '12px', marginTop: '12px', background: '#1A1A1A', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-          >
-            {loading ? 'Procesando...' : 'Procesar venta'}
-          </button>
         </div>
+        {carrito.length > 0 && (
+          <div className="bg-pink-950 rounded-2xl p-4">
+            <p className="text-pink-300 text-xs font-medium mb-3">CARRITO</p>
+            {carrito.map(function(i) {
+              return (
+                <div key={i.id} className="flex items-center justify-between mb-2">
+                  <div className="flex-1">
+                    <p className="text-white text-sm">{i.nombre}</p>
+                    <p className="text-pink-400 text-xs">x{i.cantidad} · ${i.precio_unitario}</p>
+                  </div>
+                  <p className="text-white text-sm font-medium mr-3">${i.subtotal}</p>
+                  <button onClick={function() { quitarDelCarrito(i.id) }} className="text-pink-400 text-lg">x</button>
+                </div>
+              )
+            })}
+            <div className="border-t border-pink-800 pt-3 mt-3 flex justify-between items-center mb-3">
+              <p className="text-white font-bold">Total</p>
+              <p className="text-white text-xl font-bold">${total}</p>
+            </div>
+            <div className="flex gap-2 mb-3">
+              {['efectivo', 'tarjeta', 'transferencia'].map(function(m) {
+                return <button key={m} onClick={function() { setMetodo(m) }} className={metodo === m ? 'flex-1 py-2 rounded-xl text-xs font-medium bg-pink-500 text-white' : 'flex-1 py-2 rounded-xl text-xs font-medium bg-pink-900 text-pink-300'}>{m}</button>
+              })}
+            </div>
+            <button onClick={cobrar} disabled={loading} className="w-full bg-pink-500 text-white font-bold py-3 rounded-xl text-sm">{loading ? 'Procesando...' : 'Cobrar $' + total}</button>
+          </div>
+        )}
+        {carrito.length === 0 && !exito && <div className="bg-white rounded-2xl p-8 text-center text-gray-400 border border-pink-100">Agrega productos para iniciar una venta</div>}
       </div>
     </div>
   )
